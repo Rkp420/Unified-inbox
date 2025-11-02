@@ -29,6 +29,7 @@ export async function sendMessage({ to, body, channel }: SendMessageOptions) {
     });
 
     return { success: true, messageSid: message.sid };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Twilio send error:", error);
     return { success: false, error: error.message };
