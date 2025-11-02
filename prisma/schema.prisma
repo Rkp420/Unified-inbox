@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          Role      @default(VIEWER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  teams         TeamMember[]
+  notes         Note[]
+}
+
+model Team {
+  id      String @id @default(cuid())
+  name    String
+  members TeamMember[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId String
+  role   Role
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
+model Contact {
+  id            String    @id @default(cuid())
+  name          String?
+  phone         String?   @unique
+  email         String?   @unique
+  socialHandles Json?
+  createdAt     DateTime  @default(now())
+  messages      Message[]
+  notes         Note[]
+}
+
+model Message {
+  id           String    @id @default(cuid())
+  contact      Contact   @relation(fields: [contactId], references: [id])
+  contactId    String
+  channel      Channel
+  channelId    String?   // vendor-specific id (Twilio SID, etc.)
+  direction    Direction
+  body         String?
+  media        Json?     // array of media urls/metadata
+  status       MessageStatus @default(PENDING)
+  scheduledAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  threadId     String?   // optional grouping id
+}
+
+enum Channel {
+  SMS
+  WHATSAPP
+  EMAIL
+  TWITTER
+  FACEBOOK
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  RECEIVED
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  author     User     @relation(fields: [authorId], references: [id])
+  authorId   String
+  contact    Contact  @relation(fields: [contactId], references: [id])
+  contactId  String
+  content    String
+  isPrivate  Boolean  @default(false)
+  encrypted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Schedule {
+  id         String   @id @default(cuid())
+  name       String
+  messageId  String?  // optional template message
+  payload    Json
+  runAt      DateTime
+  recurrence String?  // cron or ISO interval
+  createdAt  DateTime @default(now())
+  status     ScheduleStatus @default(PENDING)
+}
+
+enum ScheduleStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  type       String
+  payload    Json
+  occurredAt DateTime @default(now())
+}
